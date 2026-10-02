@@ -1,70 +1,127 @@
 <?php
-require_once __DIR__ . '/../mailer/PHPMailer/src/PHPMailer.php';
-require_once __DIR__ . '/../mailer/PHPMailer/src/SMTP.php';
-require_once __DIR__ . '/../mailer/PHPMailer/src/Exception.php';
-
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-function procesarContacto($datos, $pdo) {
-    $errores = [];
-    $exito = false;
+require_once __DIR__ . '/../mailer/PHPMailer/src/Exception.php';
+require_once __DIR__ . '/../mailer/PHPMailer/src/PHPMailer.php';
+require_once __DIR__ . '/../mailer/PHPMailer/src/SMTP.php';
 
-    $nombre = trim($datos['nombre'] ?? '');
-    $email = trim($datos['email'] ?? '');
+/**
+ * Valida el formulario, guarda el mensaje en la base y envía el correo.
+ * Devuelve ['errores' => [...], 'exito' => true|false]
+ */
+function procesarContacto(array $datos, PDO $pdo): array
+{
+    $nombre   = trim($datos['nombre'] ?? '');
+    $email    = trim($datos['email'] ?? '');
     $telefono = trim($datos['telefono'] ?? '');
-    $mensaje = trim($datos['mensaje'] ?? '');
+    $mensaje  = trim($datos['mensaje'] ?? '');
 
-    // Validación en servidor (nunca confiar solo en la del navegador/JS)
-    if (empty($nombre)) $errores[] = 'El nombre es obligatorio.';
-    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errores[] = 'Ingresa un correo electrónico válido.';
+    // ---------- Validación ----------
+    $errores = [];
+
+    if ($nombre === '') {
+        $errores[] = 'Escribe tu nombre.';
+    } elseif (mb_strlen($nombre) > 100) {
+        $errores[] = 'El nombre no puede superar los 100 caracteres.';
     }
-    if (empty($mensaje)) $errores[] = 'El mensaje no puede estar vacío.';
+
+    if ($email === '') {
+        $errores[] = 'Escribe tu correo electrónico.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 150) {
+        $errores[] = 'El correo electrónico no es válido.';
+    }
+
+    if ($telefono !== '' && !preg_match('/^[0-9+\-\s()]{7,20}$/', $telefono)) {
+        $errores[] = 'El teléfono no es válido. Usa solo números, espacios y el signo +.';
+    }
+
+    if ($mensaje === '') {
+        $errores[] = 'Escribe tu mensaje.';
+    } elseif (mb_strlen($mensaje) < 10) {
+        $errores[] = 'El mensaje es muy corto (mínimo 10 caracteres).';
+    } elseif (mb_strlen($mensaje) > 2000) {
+        $errores[] = 'El mensaje no puede superar los 2000 caracteres.';
+    }
 
     if (!empty($errores)) {
         return ['errores' => $errores, 'exito' => false];
     }
 
-    // Guardar en la base de datos primero (aunque falle el correo, no perdemos el contacto)
-    $stmt = $pdo->prepare(
-        "INSERT INTO contactos (nombre, email, telefono, mensaje) VALUES (?, ?, ?, ?)"
-    );
-    $stmt->execute([$nombre, $email, $telefono, $mensaje]);
-    $contactoId = $pdo->lastInsertId();
+    // ---------- Guardar en la base de datos ----------
+    try {
+        $stmt = $pdo->prepare(
+            "INSERT INTO contactos (nombre, email, telefono, mensaje) VALUES (?, ?, ?, ?)"
+        );
+        $stmt->execute([$nombre, $email, ($telefono === '' ? null : $telefono), $mensaje]);
+        $idContacto = (int) $pdo->lastInsertId();
+    } catch (PDOException $e) {
+        error_log('Contacto: error al guardar - ' . $e->getMessage());
+        return [
+            'errores' => ['No pudimos guardar tu mensaje. Intenta de nuevo más tarde.'],
+            'exito'   => false,
+        ];
+    }
 
-    // Enviar correo con PHPMailer
+    // ---------- Enviar correo ----------
+    // Si el correo falla, el mensaje ya quedó guardado (enviado_correo = 0)
+    if (enviarCorreoContacto($nombre, $email, $telefono, $mensaje)) {
+        try {
+            $pdo->prepare("UPDATE contactos SET enviado_correo = 1 WHERE id = ?")
+                ->execute([$idContacto]);
+        } catch (PDOException $e) {
+            error_log('Contacto: error al marcar el envío - ' . $e->getMessage());
+        }
+    }
+
+    return ['errores' => [], 'exito' => true];
+}
+
+/**
+ * Envía el mensaje al correo del club con PHPMailer.
+ * Los datos SMTP salen de php/config/correo.php (no se sube a Git).
+ */
+function enviarCorreoContacto(string $nombre, string $email, string $telefono, string $mensaje): bool
+{
+    $ruta = __DIR__ . '/../config/correo.php';
+    if (!file_exists($ruta)) {
+        error_log('Contacto: falta php/config/correo.php');
+        return false;
+    }
+    $cfg = require $ruta;
+
+    // Evita que saltos de línea en el nombre inyecten encabezados
+    $nombreSeguro = preg_replace('/[\r\n]+/', ' ', $nombre);
+
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
-        $mail->Host = 'smtp.gmail.com';           // o el que use GoDaddy
-        $mail->SMTPAuth = true;
-        $mail->Username = 'notificaciones@clubeleve.com.co';
-        $mail->Password = getenv('MAIL_PASSWORD'); // nunca hardcodear la clave aquí
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
+        $mail->Host       = $cfg['host'];
+        $mail->SMTPAuth   = true;
+        $mail->Username   = $cfg['usuario'];
+        $mail->Password   = $cfg['clave'];
+        $mail->Port       = (int) $cfg['puerto'];
+        $mail->SMTPSecure = ($mail->Port === 465)
+            ? PHPMailer::ENCRYPTION_SMTPS
+            : PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Timeout    = 10;
+        $mail->CharSet    = 'UTF-8';
 
-        $mail->setFrom('notificaciones@clubeleve.com.co', 'Club Elevé - Web');
-        $mail->addAddress('contacto@clubeleve.com.co');
-        $mail->addReplyTo($email, $nombre);
+        $mail->setFrom($cfg['usuario'], 'Club Elevé - Formulario web');
+        $mail->addAddress($cfg['destino'] ?? $cfg['usuario']);
+        $mail->addReplyTo($email, $nombreSeguro);
 
-        $mail->isHTML(true);
-        $mail->Subject = "Nuevo mensaje de contacto: $nombre";
-        $mail->Body = "
-            <strong>Nombre:</strong> " . htmlspecialchars($nombre) . "<br>
-            <strong>Email:</strong> " . htmlspecialchars($email) . "<br>
-            <strong>Teléfono:</strong> " . htmlspecialchars($telefono ?: 'No proporcionado') . "<br>
-            <strong>Mensaje:</strong><br>" . nl2br(htmlspecialchars($mensaje));
+        $mail->isHTML(false);
+        $mail->Subject = 'Nuevo mensaje de contacto: ' . $nombreSeguro;
+        $mail->Body    = "Nombre: $nombreSeguro\n"
+                       . "Correo: $email\n"
+                       . "Teléfono: " . ($telefono !== '' ? $telefono : 'No indicado') . "\n\n"
+                       . "Mensaje:\n$mensaje\n";
 
         $mail->send();
-
-        $pdo->prepare("UPDATE contactos SET enviado_correo = 1 WHERE id = ?")->execute([$contactoId]);
-        $exito = true;
-
+        return true;
     } catch (Exception $e) {
-        // El mensaje ya quedó guardado en la BD aunque el correo falle
-        $errores[] = 'Tu mensaje se guardó, pero hubo un problema enviando la notificación por correo.';
+        error_log('Contacto: error de PHPMailer - ' . $mail->ErrorInfo);
+        return false;
     }
-
-    return ['errores' => $errores, 'exito' => $exito];
 }
