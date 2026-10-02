@@ -141,3 +141,20 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# --- Dumps de base de datos con datos reales ---
+# (sql/club_eleve.sql sí se versiona: es solo el esquema)
+sql/*_backup*.sql
+sql/*_datos*.sql
+*.sql.gz
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Editores ---
+.vscode/
+.idea/
+*.swp
+*.code-workspace
