@@ -158,3 +158,9 @@ desktop.ini
 .idea/
 *.swp
 *.code-workspace
+
+# --- Credenciales (nunca al repositorio) ---
+php/config/conexion.php
+php/config/correo.php
+.env
+*.env
