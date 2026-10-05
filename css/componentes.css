@@ -1,0 +1,47 @@
+.card-atleta{background:var(--color-tarjeta);border-radius:var(--radio);overflow:hidden;display:flex;flex-direction:column}
+.card-atleta[hidden]{display:none}
+.card-atleta__foto{width:100%;aspect-ratio:3/4;object-fit:cover}
+.card-atleta__nombre{padding:var(--esp-2);margin:0;font-size:1.1rem}
+.card-evento{background:var(--color-tarjeta);border-left:6px solid var(--color-primario);border-radius:var(--radio);padding:var(--esp-2);margin-bottom:var(--esp-2)}
+.card-evento__fecha{color:var(--color-secundario);font-weight:700}
+.card-evento__badge{display:inline-block;padding:.2rem .7rem;border-radius:6px;font-size:.85rem;font-weight:700;background:var(--color-apoyo);color:var(--color-texto-oscuro);border:2px solid var(--color-apoyo)}
+.card-evento__badge--cerrado{background:transparent;color:var(--color-acento);border:2px dashed var(--color-acento)}
+.galeria{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--esp-1)}
+.galeria__item{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px}
+.nav-inferior{position:fixed;bottom:0;left:0;right:0;height:var(--nav-alto);display:flex;background:var(--color-primario);z-index:1000;box-shadow:0 -2px 8px rgba(0,0,0,.4)}
+.nav-inferior__item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--color-texto);text-decoration:none;font-size:.75rem;border-top:4px solid transparent}
+.nav-inferior__item:hover{background:rgba(255,255,255,.1)}
+.nav-inferior__item--activo,.nav-inferior__item[aria-current="page"]{border-top-color:var(--color-acento);font-weight:800;text-decoration:underline;text-underline-offset:3px}
+@media(min-width:768px){.galeria{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:992px){.nav-inferior{width:100%;max-width:520px;left:50%;right:auto;transform:translateX(-50%);border-radius:var(--radio) var(--radio) 0 0}}
+/* ===== Tarjeta de atleta como enlace (index.php / atletas.php) ===== */
+a.card-atleta{color:inherit;text-decoration:none}
+a.card-atleta:hover .card-atleta__nombre{text-decoration:underline;text-underline-offset:3px}
+a.card-atleta:focus-visible{outline:3px solid var(--color-acento);outline-offset:3px}
+.card-atleta__badge{display:inline-block;margin:0 var(--esp-2) var(--esp-2);padding:.2rem .7rem;border-radius:6px;font-size:.85rem;font-weight:700;background:var(--color-apoyo);color:var(--color-texto-oscuro);border:2px solid var(--color-apoyo);align-self:flex-start}
+
+/* ===== Perfil de atleta (perfil-atleta.php) ===== */
+.perfil,.perfil-bio,.perfil-galeria{padding:var(--esp-2)}
+.perfil__volver{display:inline-block;margin-bottom:var(--esp-2);color:var(--color-secundario);font-weight:700}
+.perfil__cabecera{display:flex;flex-direction:column;gap:var(--esp-2)}
+.perfil__foto{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:var(--radio)}
+.perfil__titulo{margin:0 0 var(--esp-1)}
+.perfil__badge{display:inline-block;padding:.2rem .7rem;border-radius:6px;font-size:.85rem;font-weight:700;background:var(--color-apoyo);color:var(--color-texto-oscuro);border:2px solid var(--color-apoyo)}
+.perfil__categoria{margin:var(--esp-1) 0;color:var(--color-secundario);font-weight:700}
+.perfil__logro{border-left:6px solid var(--color-acento);padding-left:var(--esp-2)}
+.perfil__logro-etiqueta{font-weight:800}
+.perfil-bio__titulo,.perfil-galeria__titulo{margin:0 0 var(--esp-2)}
+.perfil-bio__texto{max-width:65ch;line-height:1.6}
+.perfil-galeria__grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--esp-1)}
+.perfil-galeria__item{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px}
+@media(min-width:768px){
+  .perfil__cabecera{flex-direction:row;align-items:flex-start}
+  .perfil__foto{width:40%;max-width:360px}
+  .perfil-galeria__grid{grid-template-columns:repeat(3,1fr)}
+}
+
+.card-atleta__badge--destacado{
+  background:var(--color-acento);
+  color:var(--color-texto-oscuro);
+  border:2px solid var(--color-acento)
+}

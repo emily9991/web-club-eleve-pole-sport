@@ -14,3 +14,25 @@ document.querySelectorAll('.atletas__filtro').forEach(boton => {
     });
   });
 });
+(() => {
+  const btn = document.querySelector('.encabezado__menu-btn');
+  const panel = document.getElementById('menu-panel');
+  if (!btn || !panel) return;
+
+  const alternar = (abrir) => {
+    btn.setAttribute('aria-expanded', String(abrir));
+    btn.setAttribute('aria-label', abrir ? 'Cerrar menú' : 'Abrir menú');
+    panel.hidden = !abrir;
+  };
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    alternar(btn.getAttribute('aria-expanded') !== 'true');
+  });
+  document.addEventListener('click', (e) => {
+    if (!panel.hidden && !panel.contains(e.target)) alternar(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !panel.hidden) { alternar(false); btn.focus(); }
+  });
+})();

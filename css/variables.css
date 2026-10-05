@@ -1,0 +1,9 @@
+:root{
+--color-primario:#008B8B;--color-secundario:#48D1CC;--color-acento:#FF8C00;
+--color-apoyo:#3CB371;--color-info:#2E6FDB;--color-fondo-oscuro:#0D1B1B;
+--color-texto:#F2F7F7;--color-texto-oscuro:#0D1B1B;--color-tarjeta:#142626;
+--fuente-base:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+--fuente-titulo:"Space Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+--esp-1:.5rem;--esp-2:1rem;--esp-3:1.5rem;--esp-4:2.5rem;
+--radio:12px;--nav-alto:64px;
+}

@@ -1,4 +1,41 @@
-            <li>✗ <?= htmlspecialchars($error) ?></li>
+<?php
+require __DIR__ . '/php/config/conexion.php';
+require __DIR__ . '/php/controllers/contacto.php';
+
+$titulo         = 'Contacto';
+$pagina_activa  = 'contacto';
+$scripts_extra  = [];
+
+$errors = [];
+$exito  = isset($_GET['ok']);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $resultado = procesarContacto($_POST, $pdo);
+    $errors    = $resultado['errores'];
+    if ($resultado['exito']) {
+        header('Location: contacto.php?ok=1');
+        exit;
+    }
+}
+
+require __DIR__ . '/php/includes/header.php';
+?>
+
+  <section class="contacto">
+    <h1 class="contacto__titulo">Contacto</h1>
+
+    <?php if ($exito): ?>
+      <div class="contacto__exito" role="status">
+        <span aria-hidden="true">✓</span> ¡Gracias! Recibimos tu mensaje.
+      </div>
+    <?php endif; ?>
+
+    <?php if (!empty($errors)): ?>
+      <div class="contacto__errores" role="alert">
+        <p>Por favor corrige lo siguiente:</p>
+        <ul>
+          <?php foreach ($errors as $error): ?>
+            <li><span aria-hidden="true">✗</span> <?= htmlspecialchars($error) ?></li>
           <?php endforeach; ?>
         </ul>
       </div>
